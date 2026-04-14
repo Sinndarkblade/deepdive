@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Env
+.env
+.venv/
+venv/
+env/
+
+# Investigations (user data — never commit)
+investigations/
+
+# DeepDive user data
+~/.deepdive/
+
+# Generated files
+*.pkl
+*.db
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tauri / app
+app/src-tauri/target/
+app/src-tauri/gen/
+node_modules/
+
+# Claude
+.claude/
+
+# Internal dev files
+BUGS.md
+CLAUDE.md
+HARNESS_GAP_REPORT.md
+INVESTIGATOR_HARNESS_DESIGN.md
+PLAN.md
+PROJECT_MAP.md
+REWORK_PLAN.md
+prototype.html
+app/
+templates/
+tools/
+web/

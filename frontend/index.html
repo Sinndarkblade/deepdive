@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepDive</title>
+  <link rel="stylesheet" href="/static/css/themes.css">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <link rel="stylesheet" href="/static/css/chat.css">
+  <script>
+    (function(){
+      var t = localStorage.getItem('deepdive-theme');
+      if (!t) { t = 'dark'; localStorage.setItem('deepdive-theme', 'dark'); }
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+</head>
+<body>
+<div class="viewport">
+  <canvas id="graphCanvas"></canvas>
+
+  <!-- Top Bar -->
+  <div class="topbar glass">
+    <span class="topbar-brand">DEEPDIVE</span>
+    <div class="topbar-sep"></div>
+    <select id="navSelect" onchange="handleSwitchInvestigation(this.value)" class="topbar-select">
+      <option value="" disabled>Investigations</option>
+    </select>
+    <div class="topbar-actions">
+      <button onclick="toggleSidebar()" class="topbar-btn" title="Toggle intel panel">Intel</button>
+      <div class="topbar-menu-wrap" id="topbarMenuWrap">
+        <button class="topbar-btn topbar-menu-btn" onclick="toggleTopMenu()" title="Views &amp; Tools">
+          ☰ Menu
+        </button>
+        <div class="topbar-dropdown" id="topbarDropdown">
+          <div class="topbar-dd-section">Views</div>
+          <button onclick="closeTopMenu();window.location.href='/timeline'" class="topbar-dd-item">📅 Timeline</button>
+          <button onclick="closeTopMenu();window.location.href='/money-flow'" class="topbar-dd-item">💰 Money Flow</button>
+          <button onclick="closeTopMenu();window.location.href='/report-view'" class="topbar-dd-item">📋 Report</button>
+          <div class="topbar-dd-sep"></div>
+          <div class="topbar-dd-section">Export</div>
+          <button onclick="closeTopMenu();exportInvestigation()" class="topbar-dd-item">⬇ Export JSON</button>
+          <button onclick="closeTopMenu();exportObsidian()" class="topbar-dd-item">🔮 Export Obsidian</button>
+          <div class="topbar-dd-sep"></div>
+          <div class="topbar-dd-section">Investigate</div>
+          <button onclick="closeTopMenu();scanCrossLinks()" class="topbar-dd-item">🔗 Cross-Links</button>
+          <div class="topbar-dd-sep"></div>
+          <button onclick="closeTopMenu();window.location.href='/settings'" class="topbar-dd-item">⚙ Settings</button>
+          <div class="topbar-dd-sep"></div>
+          <div class="topbar-dd-section">Theme</div>
+          <div class="topbar-dd-swatches">
+            <div class="topbar-swatch" data-theme="aero"     title="Aero"     onclick="setTheme('aero')"></div>
+            <div class="topbar-swatch" data-theme="dark"     title="Dark"     onclick="setTheme('dark')"></div>
+            <div class="topbar-swatch" data-theme="emerald"  title="Emerald"  onclick="setTheme('emerald')"></div>
+            <div class="topbar-swatch" data-theme="violet"   title="Violet"   onclick="setTheme('violet')"></div>
+            <div class="topbar-swatch" data-theme="crimson"  title="Crimson"  onclick="setTheme('crimson')"></div>
+            <div class="topbar-swatch" data-theme="amber"    title="Amber"    onclick="setTheme('amber')"></div>
+            <div class="topbar-swatch" data-theme="midnight" title="Midnight" onclick="setTheme('midnight')"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar glass">
+    <div class="sidebar-header">
+      <div class="sidebar-title">DeepDive</div>
+      <div class="sidebar-meta"></div>
+    </div>
+    <div class="sidebar-body">
+
+      <!-- Types -->
+      <div class="section">
+        <div class="section-header open" onclick="toggleSection(this)">Types <span class="chv">&#9662;</span></div>
+        <div class="section-body open"><div class="legend" id="legendContainer"></div></div>
+      </div>
+
+      <!-- Files / Document Corpus -->
+      <div class="section" id="filesSection">
+        <div class="section-header open" onclick="toggleSection(this)">Files &amp; Documents <span class="chv">&#9662;</span></div>
+        <div class="section-body open">
+          <div id="fileDropZone" class="file-drop-zone" ondragover="fileDragOver(event)" ondragleave="fileDragLeave(event)" ondrop="fileDrop(event)" onclick="openFileBrowserForIngest()">
+            <div class="file-drop-icon">&#128193;</div>
+            <div class="file-drop-label">Drop folder here or click to browse</div>
+            <div class="file-drop-sub">txt · pdf · csv · json · html · md · xml</div>
+          </div>
+          <div id="fileCorpusList" style="margin-top:6px;max-height:160px;overflow-y:auto"></div>
+          <div id="fileIngestProgress" style="display:none;margin-top:6px">
+            <div class="progress-bar-track"><div class="progress-bar-fill" id="fileProgressBar"></div></div>
+            <div class="progress-label" id="fileProgressLabel">Processing...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gaps (read-only display) -->
+      <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">Gaps <span class="chv">&#9662;</span></div>
+        <div class="section-body">
+          <div id="gapList" style="max-height:180px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <!-- Findings -->
+      <div class="section" id="findingsSection" style="display:none">
+        <div class="section-header" onclick="toggleSection(this)">Findings <span class="chv">&#9662;</span></div>
+        <div class="section-body" id="findingsContainer"></div>
+      </div>
+
+      <!-- Cross-Links -->
+      <div class="section" id="crossLinksSection" style="display:none">
+        <div class="section-header" onclick="toggleSection(this)">Cross-Links <span class="chv">&#9662;</span></div>
+        <div class="section-body">
+          <div id="crossLinksList" style="max-height:200px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <!-- Recent -->
+      <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">Recent <span class="chv">&#9662;</span></div>
+        <div class="section-body"><div id="recentTargets" style="max-height:140px;overflow-y:auto"></div></div>
+      </div>
+
+      <!-- Entities -->
+      <div class="section">
+        <div class="section-header open" onclick="toggleSection(this)">Entities <span class="chv">&#9662;</span></div>
+        <div class="section-body open">
+          <input type="text" class="input-field" placeholder="Filter entities..." oninput="filterEntities(this.value)" style="margin-bottom:8px">
+          <div id="entityList" style="max-height:400px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Feed Panel -->
+  <div class="feed-panel glass" id="feedPanel">
+    <div class="feed-panel-header">
+      <div class="feed-panel-title" id="feedPanelTitle">Feed Data</div>
+      <button class="detail-close" onclick="closeFeedPanel()">&#10005;</button>
+    </div>
+    <div class="feed-panel-body" id="feedPanelBody"></div>
+  </div>
+
+  <!-- Detail Panel -->
+  <div class="detail-panel glass">
+    <div class="detail-header">
+      <div class="detail-header-label">Entity Intel</div>
+      <button class="detail-close" onclick="closeDetailPanel();deselectNode()">&#10005;</button>
+    </div>
+    <div class="detail-body"></div>
+  </div>
+
+  <!-- Chat Panel -->
+  <div class="chat-panel glass" id="chatPanel">
+    <div class="chat-titlebar">
+      <div class="chat-titlebar-left">
+        <span class="chat-titlebar-dot"></span>
+        <span class="chat-titlebar-name" id="chatAgentName">Investigator</span>
+        <span class="chat-titlebar-status">online</span>
+      </div>
+      <div class="chat-titlebar-actions">
+        <button class="chat-titlebar-btn" onclick="clearChatMessages()" title="Clear">&#128465;</button>
+        <button class="chat-titlebar-btn close" onclick="toggleChat()" title="Close">&#10005;</button>
+      </div>
+    </div>
+    <div class="chat-mode-bar" id="chatModeBar"></div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-typing" id="chatTyping">
+      <span class="chat-typing-dot"></span>
+      <span class="chat-typing-dot"></span>
+      <span class="chat-typing-dot"></span>
+    </div>
+    <div class="chat-input-area">
+      <button class="chat-attach-btn" onclick="handleChatAttach()" title="Attach files/folder">&#128206;</button>
+      <textarea class="chat-input" id="chatInput" placeholder="Ask your investigator..." rows="1"></textarea>
+      <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- Chat Toggle Button -->
+  <button class="chat-toggle" id="chatToggle" onclick="toggleChat()">&#128172;</button>
+
+  <!-- Zoom Controls -->
+  <div class="zoom-controls">
+    <button class="zoom-btn" onclick="zoomIn()" title="Zoom In">+</button>
+    <button class="zoom-btn" onclick="zoomOut()" title="Zoom Out">&minus;</button>
+    <button class="zoom-btn" onclick="zoomFit()" title="Fit">&#8862;</button>
+    <button class="zoom-btn" onclick="graphState.autoRotate=!graphState.autoRotate" title="Rotate">&#8634;</button>
+  </div>
+
+  <!-- Tooltip -->
+  <div class="tooltip" id="tooltip"></div>
+
+  <!-- Banner -->
+  <div class="banner" id="banner"></div>
+
+  <!-- Status Bar -->
+  <div class="statusbar glass">
+    <div class="status-dot"></div>
+    <span id="statusText">Ready</span>
+    <span class="status-sep">·</span>
+    <span id="statusProvider">DeepDive</span>
+  </div>
+
+  <!-- File Browser Modal -->
+  <div class="modal-overlay" id="fileBrowserModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Select Folder</div>
+        <button class="detail-close" onclick="closeFileBrowser()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <div class="path-breadcrumb" id="pathBreadcrumb"></div>
+        <div id="fileBrowserList"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="closeFileBrowser()">Cancel</button>
+        <button class="btn btn-primary btn-sm" style="width:auto" onclick="confirmFileBrowser()">Select</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts — order matters: api first, then graph, then views, then app -->
+<script src="/static/js/api.js"></script>
+<script src="/static/js/graph.js"></script>
+<script src="/static/js/views.js"></script>
+<script src="/static/js/chat.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>

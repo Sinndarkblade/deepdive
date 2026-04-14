@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepDive</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #020203; --bg2: #050810; --bg3: #0a0e1a; --surface: #111827;
+      --border: rgba(255,255,255,0.06); --text: #ededef; --text2: #8a8f98; --muted: #4a5060;
+      --accent: #00ccaa; --accent2: #00e6bf; --danger: #e74c3c; --success: #2ecc71;
+      --font: system-ui, -apple-system, sans-serif;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); height: 100vh; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at 30% 50%, rgba(0,204,170,0.04) 0%, transparent 60%),
+                  radial-gradient(ellipse at 70% 50%, rgba(0,100,200,0.03) 0%, transparent 60%), var(--bg);
+    }
+    .setup { width: 480px; text-align: center; }
+    .logo { font-size: 48px; margin-bottom: 8px; }
+    h1 { font-size: 32px; font-weight: 700; margin-bottom: 4px; }
+    h1 span { color: var(--accent); }
+    .sub { font-size: 14px; color: var(--text2); margin-bottom: 30px; line-height: 1.5; }
+    .step { display: none; }
+    .step.active { display: block; }
+    h2 { font-size: 18px; color: var(--accent); margin-bottom: 12px; }
+    .note { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+    .providers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0; text-align: left; }
+    .prov { padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.15s; }
+    .prov:hover { border-color: var(--accent); }
+    .prov.selected { border-color: var(--accent); background: rgba(0,204,170,0.08); }
+    .prov-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .prov-desc { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .prov-free { font-size: 9px; color: var(--accent); font-weight: 600; }
+    input[type="text"], input[type="password"] {
+      width: 100%; padding: 12px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 14px; font-family: var(--font); margin-top: 8px;
+    }
+    input:focus { outline: none; border-color: var(--accent); }
+    .btn { display: inline-block; padding: 12px 28px; background: var(--accent); color: var(--bg);
+      border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
+      font-family: var(--font); transition: all 0.2s; margin-top: 16px; }
+    .btn:hover { background: var(--accent2); transform: translateY(-1px); }
+    .btn-secondary { background: var(--surface); color: var(--text2); border: 1px solid var(--border); box-shadow: none; }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); background: var(--surface); }
+    .status { margin-top: 12px; font-size: 12px; min-height: 20px; }
+    .status.ok { color: var(--success); }
+    .status.err { color: var(--danger); }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--accent);
+      border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite;
+      vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .step.active { animation: fadeIn 0.3s ease-out; }
+    .version { position: fixed; bottom: 16px; right: 16px; font-size: 10px; color: var(--muted); }
+    .brand { position: fixed; bottom: 16px; left: 16px; font-size: 10px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="setup">
+    <div class="logo">🔍</div>
+    <h1>Deep<span>Dive</span></h1>
+    <p class="sub">AI-Powered Research & Discovery</p>
+
+    <!-- STEP 1: Choose Provider -->
+    <div id="step1" class="step active">
+      <h2>Choose your AI provider</h2>
+      <div class="providers">
+        <div class="prov" onclick="selectProvider('claude')" id="p-claude">
+          <div class="prov-name">Claude (CLI)</div>
+          <div class="prov-desc">Uses Claude Code login</div>
+          <div class="prov-free">No API key needed</div>
+        </div>
+        <div class="prov" onclick="selectProvider('claude_api')" id="p-claude_api">
+          <div class="prov-name">Claude (API Key)</div>
+          <div class="prov-desc">Anthropic API key</div>
+        </div>
+      </div>
+      <p class="note">You can change this anytime in Settings</p>
+      <button class="btn" id="nextBtn" onclick="goStep2()" style="display:none">Continue</button>
+    </div>
+
+    <!-- STEP 2: API Key (if needed) -->
+    <div id="step2" class="step">
+      <h2 id="keyTitle">Enter API Key</h2>
+      <input type="password" id="apiKeyInput" placeholder="Paste your API key here...">
+      <p class="note" id="keyNote"></p>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:16px">
+        <button class="btn-secondary btn" onclick="goStep1()">Back</button>
+        <button class="btn" onclick="saveAndLaunch()">Launch DeepDive</button>
+      </div>
+      <div id="status" class="status"></div>
+    </div>
+  </div>
+
+  <div class="version">v0.1.0</div>
+  <div class="brand">Phoenix Quantum Labs LLC</div>
+
+  <script>
+    const SERVER = 'http://localhost:8766';
+    let selectedProv = '';
+
+    const KEY_NOTES = {
+      claude_api: 'Get your key at console.anthropic.com',
+    };
+
+    function selectProvider(p) {
+      selectedProv = p;
+      document.querySelectorAll('.prov').forEach(el => el.classList.remove('selected'));
+      document.getElementById('p-' + p).classList.add('selected');
+      document.getElementById('nextBtn').style.display = 'inline-block';
+    }
+
+    function goStep1() {
+      document.getElementById('step1').classList.add('active');
+      document.getElementById('step2').classList.remove('active');
+    }
+
+    function goStep2() {
+      if (!selectedProv) return;
+
+      // Claude CLI needs no key — go straight to launch
+      if (selectedProv === 'claude') {
+        saveAndLaunch();
+        return;
+      }
+
+      document.getElementById('step1').classList.remove('active');
+      document.getElementById('step2').classList.add('active');
+      document.getElementById('keyTitle').textContent = document.getElementById('p-' + selectedProv).querySelector('.prov-name').textContent + ' API Key';
+      document.getElementById('apiKeyInput').style.display = 'block';
+      document.getElementById('keyNote').textContent = KEY_NOTES[selectedProv] || '';
+    }
+
+    async function saveAndLaunch() {
+      const status = document.getElementById('status') || document.createElement('div');
+      status.innerHTML = '<span class="spinner"></span>Connecting...';
+      status.className = 'status';
+
+      const settings = {
+        provider: selectedProv,
+        api_keys: {},
+        default_depth: 'standard',
+      };
+
+      const keyInput = document.getElementById('apiKeyInput');
+      if (keyInput && keyInput.value.trim()) {
+        settings.api_keys[selectedProv] = keyInput.value.trim();
+      }
+
+      try {
+        // Save settings
+        const saveRes = await fetch(SERVER + '/settings/save', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(settings)
+        });
+        const saveData = await saveRes.json();
+
+        if (!saveData.success) {
+          status.textContent = 'Failed to save settings';
+          status.className = 'status err';
+          return;
+        }
+
+        // Check if provider is available
+        const authRes = await fetch(SERVER + '/auth/status', { method: 'POST' });
+        const authData = await authRes.json();
+
+        if (authData.authenticated) {
+          status.innerHTML = '<span class="spinner"></span>Loading DeepDive...';
+          status.className = 'status ok';
+          window.location.href = SERVER + '/board';
+        } else {
+          if (selectedProv === 'claude') {
+            status.textContent = 'Claude CLI not authenticated. Run "claude login" in terminal first.';
+          } else {
+            status.textContent = 'Invalid API key or provider unavailable.';
+          }
+          status.className = 'status err';
+        }
+      } catch (e) {
+        status.textContent = 'Cannot connect to DeepDive server. Make sure it is running.';
+        status.className = 'status err';
+      }
+    }
+
+    // Check if already configured — skip setup only if user has saved settings before
+    async function checkExisting() {
+      try {
+        const res = await fetch(SERVER + '/settings/load', { method: 'POST' });
+        const settings = await res.json();
+        // Only skip if they've explicitly chosen a provider before
+        if (settings._configured) {
+          const auth = await fetch(SERVER + '/auth/status', { method: 'POST' });
+          const data = await auth.json();
+          if (data.authenticated) {
+            window.location.href = SERVER + '/board';
+          }
+        }
+      } catch (e) {}
+    }
+    checkExisting();
+  </script>
+</body>
+</html>
