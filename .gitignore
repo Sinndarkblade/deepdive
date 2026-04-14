@@ -57,3 +57,5 @@ app/
 templates/
 tools/
 web/
+**/__pycache__/
+*.pyc
