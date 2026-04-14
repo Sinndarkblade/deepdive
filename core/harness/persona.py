@@ -47,7 +47,10 @@ def save_persona(investigator_name, user_name):
     settings['first_run_complete'] = True
     with open(SETTINGS_FILE, 'w') as f:
         json.dump(settings, f, indent=2)
-    os.chmod(SETTINGS_FILE, 0o600)
+    try:
+        os.chmod(SETTINGS_FILE, 0o600)
+    except Exception:
+        pass
 
 
 def is_first_run():

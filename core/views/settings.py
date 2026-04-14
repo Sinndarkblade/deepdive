@@ -39,7 +39,10 @@ def save_settings(settings: dict) -> bool:
         SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
         with open(SETTINGS_FILE, 'w') as f:
             json.dump(settings, f, indent=2)
+        try:
         os.chmod(SETTINGS_FILE, 0o600)
+    except Exception:
+        pass
         return True
     except:
         return False

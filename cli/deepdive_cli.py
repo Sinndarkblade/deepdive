@@ -224,7 +224,7 @@ def interactive_mode(graph, provider, engines, investigation_dir):
         elif choice == 'b':
             board_path = os.path.join(investigation_dir, 'board_3d.html')
             generate_board_3d(graph, board_path, graph.name)
-            os.system(f'xdg-open "{board_path}" 2>/dev/null &')
+            import webbrowser; webbrowser.open(f'file://{os.path.abspath(board_path)}')
             print(f"   Board opened: {board_path}")
         elif choice == 'g':
             gaps = graph.detect_gaps()
